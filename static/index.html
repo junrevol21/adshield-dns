@@ -1,0 +1,2372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AdShield DNS</title>
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/icon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/icon.png">
+  <link rel="apple-touch-icon" href="/static/icon.png">
+  <style>
+    :root {
+      --bg-base: #0a0f1d;
+      --bg-sidebar: #0d1527;
+      --bg-header: #0f192e;
+      --card-bg: #131d33;
+      --card-hover: #182542;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(16, 185, 129, 0.3);
+      --text: #f1f5f9;
+      --text-muted: #8492a6;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --cyan: #0ea5e9;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-base); color: var(--text); height: 100vh; overflow: hidden; user-select: none; font-size: 12px; }
+
+    /* App Shell Layout */
+    .app-shell { display: flex; width: 100vw; height: 100vh; overflow: hidden; }
+
+    /* Left Sidebar */
+    aside.sidebar {
+      width: 230px;
+      min-width: 230px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      z-index: 40;
+    }
+
+    /* Window Controls */
+    .window-controls {
+      display: flex;
+      gap: 7px;
+      padding: 0.85rem 1rem 0.6rem 1rem;
+      align-items: center;
+    }
+    .traffic-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      display: inline-block;
+      cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s;
+    }
+    .traffic-dot:hover { transform: scale(1.15); opacity: 0.85; }
+    .dot-close { background-color: #ff5f56; border: 1px solid #e0443e; }
+    .dot-minimize { background-color: #ffbd2e; border: 1px solid #dea123; }
+    .dot-zoom { background-color: #27c93f; border: 1px solid #1aab29; }
+
+    /* Brand Header */
+    .sidebar-brand {
+      padding: 0.4rem 1rem 0.85rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand-logo-wrap {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .adguard-shield-svg {
+      width: 32px;
+      height: 32px;
+      filter: drop-shadow(0 2px 8px rgba(16, 185, 129, 0.4));
+    }
+    .brand-text h1 { font-size: 0.98rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.35rem; }
+    .brand-text p { font-size: 0.68rem; color: var(--text-muted); }
+    .pill-tier { font-size: 0.6rem; padding: 1px 5px; border-radius: 4px; font-weight: 800; text-transform: uppercase; }
+    .pill-basic { background: #1e293b; color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.1); }
+    .pill-pro { background: linear-gradient(135deg, #f59e0b, #ef4444); color: #fff; box-shadow: 0 1px 6px rgba(245, 158, 11, 0.3); }
+
+    /* Navigation Sections */
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.75rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .sidebar-nav::-webkit-scrollbar { width: 3px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+
+    .nav-section-title {
+      font-size: 0.64rem;
+      font-weight: 700;
+      color: #556987;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 0 0.5rem;
+      margin-bottom: 0.25rem;
+    }
+    .nav-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.45rem 0.65rem;
+      border-radius: 6px;
+      color: #94a3b8;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .nav-item:hover { background: rgba(255, 255, 255, 0.04); color: #fff; }
+    .nav-item.active {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      font-weight: 600;
+      box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.25);
+    }
+    .nav-icon { font-size: 0.95rem; width: 16px; text-align: center; }
+
+    /* Sidebar Footer / License Card */
+    .sidebar-footer {
+      padding: 0.75rem;
+      border-top: 1px solid var(--border);
+      background: #0b1222;
+    }
+    .license-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem;
+    }
+    .license-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
+    .license-status-title { font-size: 0.72rem; font-weight: 700; color: #fff; }
+    .btn-upgrade-pro {
+      width: 100%;
+      margin-top: 0.5rem;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      color: #fff;
+      border: none;
+      padding: 0.38rem;
+      border-radius: 6px;
+      font-size: 0.73rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.25);
+      transition: opacity 0.2s;
+    }
+    .btn-upgrade-pro:hover { opacity: 0.92; }
+
+    /* Main Content Area */
+    main.content-area {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-base);
+    }
+
+    /* Top App Header */
+    header.mac-header {
+      height: 44px;
+      min-height: 44px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-header);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 1.25rem;
+      z-index: 30;
+    }
+    .header-breadcrumb { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; font-weight: 600; color: #cbd5e1; }
+    .header-actions { display: flex; align-items: center; gap: 0.6rem; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.22rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .status-active { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-paused { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .pulse-dot { width: 6px; height: 6px; border-radius: 50%; background-color: currentColor; }
+
+    /* Language Switcher */
+    .lang-switcher {
+      display: flex;
+      align-items: center;
+      background: #0a0f1d;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2px 4px;
+      gap: 3px;
+    }
+    .lang-btn {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .lang-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+    }
+    .lang-divider { color: #334155; font-size: 0.65rem; }
+
+    /* Buttons */
+    .btn {
+      cursor: pointer;
+      border: none;
+      outline: none;
+      border-radius: 6px;
+      padding: 0.36rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .btn-primary { background: #0284c7; color: white; }
+    .btn-primary:hover { background: #0369a1; }
+    .btn-success { background: #059669; color: white; }
+    .btn-success:hover { background: #047857; }
+    .btn-warning { background: #d97706; color: white; }
+    .btn-warning:hover { background: #b45309; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn-secondary { background: #1e293b; color: #cbd5e1; border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #334155; }
+    .btn-sm { padding: 0.25rem 0.55rem; font-size: 0.7rem; border-radius: 5px; }
+
+    /* Scrollable Tab Pane Container */
+    .viewport {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.85rem 1.15rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .viewport::-webkit-scrollbar { width: 4px; }
+    .viewport::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 4px; }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: flex; flex-direction: column; flex: 1; }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.75rem;
+    }
+    .card-title {
+      font-size: 0.86rem;
+      font-weight: 700;
+      margin-bottom: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #fff;
+    }
+
+    /* 4-Stat Cards Row */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.65rem;
+      margin-bottom: 0.65rem;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem 0.85rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--card-accent, #0ea5e9);
+    }
+    .stat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem; }
+    .stat-title { font-size: 0.68rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 1.45rem; font-weight: 800; color: #fff; line-height: 1.1; }
+    .stat-sub { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Top Tables Grid */
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.65rem;
+      flex: 1;
+      min-height: 0;
+    }
+    .table-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      margin-bottom: 0;
+    }
+    .table-scroll {
+      flex: 1;
+      overflow-y: auto;
+      margin-top: 0.35rem;
+    }
+    .table-scroll::-webkit-scrollbar { width: 3px; }
+    .table-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+    th { text-align: left; padding: 0.35rem 0.5rem; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 600; font-size: 0.68rem; }
+    td { padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.03); }
+    tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.64rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-blocked { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-forwarded { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-cached { background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3); }
+    .badge-rewrite { background: rgba(139, 92, 246, 0.2); color: #c084fc; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .badge-safesearch { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    .input-text {
+      background: #090e1c;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.35rem 0.6rem;
+      color: #fff;
+      font-size: 0.78rem;
+      outline: none;
+    }
+    .input-text:focus { border-color: var(--accent); }
+
+    /* Modern Switch */
+    .switch { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #334155; transition: .2s; border-radius: 20px;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px;
+      background-color: white; transition: .2s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: var(--accent); }
+    input:checked + .slider:before { transform: translateX(16px); }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(4, 7, 15, 0.78);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease-in-out;
+    }
+    .modal-overlay.active {
+      opacity: 1; pointer-events: auto;
+    }
+    .modal-box {
+      background: #101a2f;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 1.25rem;
+      max-width: 540px;
+      width: 90%;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7);
+      transform: scale(0.96);
+      transition: transform 0.2s ease-out;
+    }
+    .modal-overlay.active .modal-box {
+      transform: scale(1);
+    }
+    .modal-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; color: #fff; }
+
+    /* Startup Splash Screen */
+    .startup-splash {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: #070b16;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 999;
+      transition: opacity 0.35s ease;
+    }
+    .splash-content { text-align: center; max-width: 320px; width: 85%; }
+    .splash-logo svg { width: 56px; height: 56px; margin-bottom: 0.75rem; }
+    .splash-title { font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -0.3px; margin-bottom: 0.25rem; }
+    .splash-status { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 1rem; }
+    .splash-progress-track {
+      width: 100%; height: 4px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden;
+    }
+    .splash-progress-fill {
+      height: 100%; width: 15%; background: linear-gradient(90deg, #10b981, #0ea5e9); border-radius: 4px;
+      transition: width 0.25s ease;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- STARTUP PROGRESS SCREEN -->
+  <div id="startupSplash" class="startup-splash">
+    <div class="splash-content">
+      <div class="splash-logo">
+        <svg viewBox="0 0 100 100" fill="none">
+          <defs>
+            <linearGradient id="splashShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#10b981"/>
+              <stop offset="100%" stop-color="#047857"/>
+            </linearGradient>
+          </defs>
+          <path d="M50 8 L86 22 L86 54 Q86 78 50 92 Q14 78 14 54 L14 22 Z" fill="url(#splashShieldGrad)" stroke="#6ee7b7" stroke-width="2.5"/>
+          <path d="M34 50 L45 61 L66 38" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="splash-title">AdShield DNS</div>
+      <div id="splashStatusText" class="splash-status">Initializing Core Engine...</div>
+      <div class="splash-progress-track">
+        <div id="splashProgressBar" class="splash-progress-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar">
+      <!-- Window Traffic Lights -->
+      <div class="window-controls">
+        <span class="traffic-dot dot-close" title="Minimize to Tray" onclick="minimizeToTray()"></span>
+        <span class="traffic-dot dot-minimize" title="Minimize Window" onclick="minimizeToTray()"></span>
+        <span class="traffic-dot dot-zoom" title="Toggle Fullscreen" onclick="toggleFullscreen()"></span>
+      </div>
+
+      <!-- Brand Header -->
+      <div class="sidebar-brand">
+        <div class="brand-logo-wrap">
+          <svg class="adguard-shield-svg" viewBox="0 0 100 100" fill="none">
+            <defs>
+              <linearGradient id="brandShieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#10b981"/>
+                <stop offset="100%" stop-color="#047857"/>
+              </linearGradient>
+            </defs>
+            <path d="M50 8 L86 22 L86 54 Q86 78 50 92 Q14 78 14 54 L14 22 Z" fill="url(#brandShieldGrad)" stroke="#6ee7b7" stroke-width="2.5"/>
+            <path d="M34 50 L45 61 L66 38" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>AdShield <span id="sidebarTierPill" class="pill-tier pill-basic">BASIC</span></h1>
+          <p data-i18n="appSubtitle">Universal DNS Security</p>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <div class="sidebar-nav">
+        <!-- Main -->
+        <div>
+          <div class="nav-section-title" data-i18n="navSecMain">Main</div>
+          <ul class="nav-list">
+            <li class="nav-item active" onclick="navTo('dashboard', 'Dashboard')">
+              <span class="nav-icon">📊</span> <span data-i18n="navDashboard">Dashboard</span>
+            </li>
+            <li class="nav-item" onclick="navTo('clients', 'Client Management')">
+              <span class="nav-icon">📱</span> <span data-i18n="navClients">Clients & Devices</span>
+            </li>
+            <li class="nav-item" onclick="navTo('logs', 'Live Query Log')">
+              <span class="nav-icon">📋</span> <span data-i18n="navLogs">Query History</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Protection -->
+        <div>
+          <div class="nav-section-title" data-i18n="navSecProtection">Protection</div>
+          <ul class="nav-list">
+            <li class="nav-item" onclick="navTo('services', 'Blocked Services')">
+              <span class="nav-icon">🚫</span> <span data-i18n="navServices">Block Services</span>
+            </li>
+            <li class="nav-item" onclick="navTo('benchmark', 'Anti-ISP & Benchmark')">
+              <span class="nav-icon">⚡</span> <span data-i18n="navBenchmark">Anti-ISP & Benchmark</span>
+              <span class="badge" style="background: linear-gradient(135deg, #f59e0b, #ef4444); color: white; margin-left: auto; font-size: 0.58rem; padding: 1px 4px;">PRO</span>
+            </li>
+            <li class="nav-item" onclick="navTo('blocklists', 'Filter Lists')">
+              <span class="nav-icon">🛡️</span> <span data-i18n="navBlocklists">Filter Lists</span>
+            </li>
+            <li class="nav-item" onclick="navTo('custom-rules', 'Custom Rules')">
+              <span class="nav-icon">📝</span> <span data-i18n="navCustomRules">Custom Rules</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Network & System -->
+        <div>
+          <div class="nav-section-title" data-i18n="navSecNetwork">Network & Settings</div>
+          <ul class="nav-list">
+            <li class="nav-item" onclick="navTo('rewrites', 'Local DNS Rewrites')">
+              <span class="nav-icon">🗺️</span> <span data-i18n="navRewrites">DNS Rewrites</span>
+            </li>
+            <li class="nav-item" onclick="navTo('setup', 'Router Guide')">
+              <span class="nav-icon">📡</span> <span data-i18n="navRouter">Router Setup</span>
+            </li>
+            <li class="nav-item" onclick="navTo('settings', 'System Settings')">
+              <span class="nav-icon">⚙️</span> <span data-i18n="navSettings">Settings</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Footer: License Box -->
+      <div class="sidebar-footer">
+        <div class="license-card">
+          <div class="license-card-header">
+            <span class="license-status-title" data-i18n="licenseStatus">License</span>
+            <span id="footerTierBadge" class="pill-tier pill-basic">BASIC</span>
+          </div>
+          <div id="footerTierDesc" style="font-size: 0.68rem; color: var(--text-muted);">
+            Standard Protection Active
+          </div>
+          <button id="btnUpgradeSidebar" class="btn-upgrade-pro" onclick="openLicenseModal()">
+            <span data-i18n="btnUpgradePro">⭐ Upgrade to PRO</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEWPORT -->
+    <main class="content-area">
+      <!-- Top Header -->
+      <header class="mac-header">
+        <div class="header-breadcrumb">
+          <span>AdShield DNS</span>
+          <span style="color: var(--text-muted);">/</span>
+          <span id="breadcrumbCurrent">Dashboard</span>
+        </div>
+        <div class="header-actions">
+          <!-- Language Switcher -->
+          <div class="lang-switcher">
+            <button id="langEnBtn" class="lang-btn active" onclick="setLanguage('en')">EN</button>
+            <span class="lang-divider">|</span>
+            <button id="langIdBtn" class="lang-btn" onclick="setLanguage('id')">ID</button>
+          </div>
+
+          <div id="serviceBadge" style="display: none; font-size: 0.65rem; background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); padding: 0.18rem 0.5rem; border-radius: 9999px; font-weight: bold;">
+            WinService: Active
+          </div>
+          <div id="statusBadge" class="status-badge status-active">
+            <span class="pulse-dot"></span>
+            <span id="statusText">Active</span>
+          </div>
+          <button id="btnPauseToggle" class="btn btn-warning btn-sm" onclick="openPauseModal()">⏸️ <span data-i18n="btnPause">Pause</span></button>
+          <button class="btn btn-secondary btn-sm" onclick="copyLanIp()">📋 <span data-i18n="btnCopyIp">Copy IP</span></button>
+        </div>
+      </header>
+
+      <!-- Scrollable Tab Panes (Dashboard fits in 1 screen) -->
+      <div class="viewport">
+
+        <!-- TAB 1: DASHBOARD (1-PAGE ZERO SCROLL) -->
+        <div id="pane-dashboard" class="tab-pane active">
+
+          <!-- ROW 1: COMPACT SYSTEM STATUS BAR -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.65rem;">
+            <!-- Left: Laptop Local DNS & IP Lock -->
+            <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1rem;">💻</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.78rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <span data-i18n="protectPcTitle">Protect This PC</span>
+                    <span id="localDnsStatusText" style="color: #f59e0b; font-weight: bold; font-size: 0.72rem;">Checking...</span>
+                  </div>
+                  <div style="font-size: 0.66rem; color: var(--text-muted);">
+                    Adapter: <b id="adapterNameText" style="color: #fff;">Wi-Fi</b> • IP: <span id="currentAdapterIp" style="color: #38bdf8; font-family: monospace;">127.0.0.1</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.35rem; align-items: center;">
+                <button id="btnApplyLocalDns" class="btn btn-success btn-sm" onclick="applyLocalDns()" data-i18n="btnEnablePc">Enable DNS</button>
+                <button id="btnResetLocalDns" class="btn btn-secondary btn-sm" onclick="resetLocalDns()" style="display: none;" data-i18n="btnRestoreDhcp">DHCP</button>
+                <button id="btnLockIp" class="btn btn-primary btn-sm" onclick="lockStaticIp()" title="Lock Static IP (Pro)">🔒 <span data-i18n="btnLockIp">Lock IP</span></button>
+                <button id="btnUnlockIp" class="btn btn-secondary btn-sm" onclick="unlockStaticIp()" style="display: none;" title="Unlock Static IP">🔓 Unlock</button>
+              </div>
+            </div>
+
+            <!-- Right: Power Mode & Auto-Update -->
+            <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.75rem; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size: 1rem;">⚡</span>
+                <div>
+                  <div style="font-weight: 700; font-size: 0.78rem; display: flex; align-items: center; gap: 0.35rem;">
+                    <span data-i18n="powerTitle">Laptop 24/7 Engine</span>
+                    <span id="powerModeText" style="color: #34d399; font-weight: bold; font-size: 0.72rem;">Screen-Off Active</span>
+                  </div>
+                  <div style="font-size: 0.66rem; color: var(--text-muted);">
+                    <span data-i18n="autoUpdateSubtitle">Auto-Update: Daily</span> • <span id="ipLockStatusBadge" class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; font-size: 0.6rem; padding: 1px 4px;">DHCP</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn btn-secondary btn-sm" onclick="openLidSettings()" title="Configure Power Plan">🔋 <span data-i18n="btnPowerSettings">Lid Config</span></button>
+                <button class="btn btn-secondary btn-sm" onclick="triggerBlocklistUpdate()" title="Update Rules Now">🔄 <span data-i18n="btnUpdateNow">Update</span></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ROW 2: 4-STAT CARDS -->
+          <div class="stat-grid">
+            <div class="stat-card" style="--card-accent: #3b82f6;">
+              <div class="stat-header">
+                <span class="stat-title" data-i18n="statTotalQueries">DNS Queries</span>
+                <span style="display:inline-flex;align-items:center;" title="Live Queries Activity">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                  </svg>
+                </span>
+              </div>
+              <div id="statTotalQueries" class="stat-value">0</div>
+              <div class="stat-sub" data-i18n="statQueriesSub">From all LAN clients</div>
+            </div>
+
+            <div class="stat-card" style="--card-accent: #ef4444;">
+              <div class="stat-header">
+                <span class="stat-title" data-i18n="statBlocked">Blocked Ads</span>
+                <span>🚫</span>
+              </div>
+              <div id="statBlockedQueries" class="stat-value">0</div>
+              <div id="statBlockedPct" class="stat-sub">0.0% of traffic</div>
+            </div>
+
+            <div class="stat-card" style="--card-accent: #10b981;">
+              <div class="stat-header">
+                <span class="stat-title" data-i18n="statActiveRules">Active Rules</span>
+                <span>🛡️</span>
+              </div>
+              <div id="statTotalRules" class="stat-value">0</div>
+              <div id="statRuleSourceDesc" class="stat-sub">StevenBlack + Hagezi Multi PRO</div>
+            </div>
+
+            <div class="stat-card" style="--card-accent: #0ea5e9;">
+              <div class="stat-header">
+                <span class="stat-title" data-i18n="statAvgLatency">DNS Latency</span>
+                <span>⚡</span>
+              </div>
+              <div id="statLatency" class="stat-value">0.0 ms</div>
+              <div id="statCacheInfo" class="stat-sub">RAM Cache: 0 entries</div>
+            </div>
+          </div>
+
+          <!-- ROW 3: COMPACT QUICK DNS TEST BAR -->
+          <div class="card" style="padding: 0.5rem 0.75rem; margin-bottom: 0.65rem;">
+            <div style="display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap;">
+              <span style="font-weight: 700; font-size: 0.75rem; color: #cbd5e1; white-space: nowrap;" data-i18n="testBarTitle">🔍 Test DNS:</span>
+              <input type="text" id="testDomainInput" value="adservice.google.com" class="input-text" style="flex: 1; min-width: 170px; height: 26px; padding: 2px 6px;">
+              <button class="btn btn-primary btn-sm" onclick="runLiveDnsTest()" data-i18n="btnTest">Run Test</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAndTestDomain('pagead2.googlesyndication.com')">Google Ads</button>
+              <button class="btn btn-secondary btn-sm" onclick="setAndTestDomain('cloudflare.com')">Legal Domain</button>
+              <div id="testResultBox" style="display: none; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 0.72rem; margin-left: auto;"></div>
+            </div>
+          </div>
+
+          <!-- ROW 4: 3-COLUMN TABLES (FLEX EXPANDS TO FIT SCREEN) -->
+          <div class="tables-grid">
+            <!-- Col 1: Top Blocked -->
+            <div class="table-card">
+              <div class="card-title" style="margin-bottom: 0.25rem;">
+                <span data-i18n="tableTopBlocked">🚫 Top Blocked Domains</span>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th data-i18n="colDomain">Domain</th><th style="text-align: right;" data-i18n="colBlocked">Blocked</th></tr></thead>
+                  <tbody id="topBlockedBody"><tr><td colspan="2" style="text-align: center; color: var(--text-muted);">No data yet</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Col 2: Top Allowed -->
+            <div class="table-card">
+              <div class="card-title" style="margin-bottom: 0.25rem;">
+                <span data-i18n="tableTopAllowed">✅ Top Allowed Domains</span>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th data-i18n="colDomain">Domain</th><th style="text-align: right;" data-i18n="colHits">Hits</th></tr></thead>
+                  <tbody id="topAllowedBody"><tr><td colspan="2" style="text-align: center; color: var(--text-muted);">No data yet</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Col 3: Top Clients -->
+            <div class="table-card">
+              <div class="card-title" style="margin-bottom: 0.25rem;">
+                <span data-i18n="tableTopClients">📱 Top Client Devices</span>
+              </div>
+              <div class="table-scroll">
+                <table>
+                  <thead><tr><th data-i18n="colClient">Device / IP</th><th style="text-align: right;" data-i18n="colQueries">Queries</th></tr></thead>
+                  <tbody id="topClientsBody"><tr><td colspan="2" style="text-align: center; color: var(--text-muted);">No data yet</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TAB 2: CLIENTS & DEVICES -->
+        <div id="pane-clients" class="tab-pane">
+          <div class="card">
+            <div class="card-title">
+              <span data-i18n="clientsCardTitle">LAN Connected Devices (Per-Device Filtering)</span>
+              <button class="btn btn-primary btn-sm" onclick="openAddClientModal()" data-i18n="btnAddClient">+ Add Device Manually</button>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;" data-i18n="clientsCardSubtitle">
+              Assign different filtering profiles for kids, work, or developer bypass:
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th data-i18n="colIp">IP Address</th>
+                  <th data-i18n="colMac">MAC / Vendor</th>
+                  <th data-i18n="colDeviceName">Device Name</th>
+                  <th data-i18n="colProfile">Profile</th>
+                  <th>SafeSearch</th>
+                  <th style="text-align: right;" data-i18n="colActions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="clientsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: QUERY LOGS -->
+        <div id="pane-logs" class="tab-pane">
+          <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+            <div class="card-title">
+              <span data-i18n="logsCardTitle">Real-Time DNS Query History</span>
+              <div style="display: flex; gap: 0.4rem; align-items: center;">
+                <input type="text" id="logSearchInput" placeholder="Search domain..." class="input-text" style="width: 160px;" oninput="fetchLogs()">
+                <select id="logFilter" class="input-text" onchange="fetchLogs()">
+                  <option value="ALL">All Traffic</option>
+                  <option value="BLOCKED">Blocked Only</option>
+                  <option value="ALLOWED">Allowed Only</option>
+                </select>
+                <button class="btn btn-secondary btn-sm" onclick="fetchLogs()">🔄 Refresh</button>
+              </div>
+            </div>
+            <div style="flex: 1; overflow-y: auto;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Domain</th>
+                    <th>Type</th>
+                    <th>Client</th>
+                    <th>Duration</th>
+                    <th style="text-align: center;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="queryLogBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: BLOCKED SERVICES -->
+        <div id="pane-services" class="tab-pane">
+          <div class="card">
+            <div class="card-title" data-i18n="servicesCardTitle">1-Click Service & App Blocker</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.85rem;" data-i18n="servicesCardSubtitle">
+              Block entire applications across all network devices with one click:
+            </div>
+            <div id="servicesGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0.65rem;"></div>
+          </div>
+        </div>
+
+        <!-- TAB 5: BENCHMARK & ANTI-ISP (PRO) -->
+        <div id="pane-benchmark" class="tab-pane">
+          <div class="card" style="border: 1px solid var(--warning); background: rgba(245, 158, 11, 0.06); margin-bottom: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <div style="font-weight: 700; color: #fbbf24; font-size: 0.88rem; display: flex; align-items: center; gap: 0.4rem;">
+                  <span>🛡️ Anti-ISP Hijacking Mode (Encrypted DoH Only)</span>
+                  <span class="badge" style="background: linear-gradient(135deg, #f59e0b, #ef4444); color: white;">PRO</span>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem;" data-i18n="dohOnlyDesc">
+                  Routes all outgoing DNS queries strictly through encrypted HTTPS (DoH) tunnels, preventing ISP DNS interception.
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="dohOnlyToggle" onchange="toggleDohOnly(this)">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span data-i18n="benchmarkTitle">Live DNS Upstream Latency Benchmark</span>
+                <span class="badge" style="background: linear-gradient(135deg, #f59e0b, #ef4444); color: white;">PRO</span>
+              </div>
+              <button id="btnRunBenchmark" class="btn btn-primary btn-sm" onclick="runBenchmark()">🚀 <span data-i18n="btnRunBenchmark">Test Latency</span></button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Protocol</th>
+                  <th>Endpoint</th>
+                  <th>Latency</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="benchmarkBody">
+                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);" data-i18n="benchmarkPlaceholder">Click button above to benchmark 7 global resolvers.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 6: FILTER LISTS -->
+        <div id="pane-blocklists" class="tab-pane">
+          <div class="card">
+            <div class="card-title">
+              <span data-i18n="blocklistTitle">Active Filter Lists & Threat Feeds</span>
+              <button id="btnUpdateAll" class="btn btn-primary btn-sm" onclick="triggerBlocklistUpdate()" data-i18n="btnUpdateAllFilters">🔄 Update All Lists</button>
+            </div>
+            <div id="blocklistStatus" style="font-size: 0.75rem; color: #38bdf8; margin-bottom: 0.75rem;">Status: Ready</div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 36px;">Active</th>
+                  <th>Filter Name</th>
+                  <th>Source URL</th>
+                  <th>Rules Count</th>
+                  <th>Last Updated</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="blocklistSourcesBody"></tbody>
+            </table>
+
+            <div style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.85rem;">
+              <div style="font-weight: 700; margin-bottom: 0.5rem;" data-i18n="addBlocklistTitle">+ Add Custom Blocklist URL</div>
+              <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+                <input type="text" id="newListName" placeholder="Filter Name" class="input-text" style="flex: 1; min-width: 140px;">
+                <input type="text" id="newListUrl" placeholder="Raw Hosts / TXT URL (https://...)" class="input-text" style="flex: 2; min-width: 220px;">
+                <button class="btn btn-success btn-sm" onclick="addCustomBlocklist()" data-i18n="btnAddSource">Add Source</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 7: CUSTOM RULES -->
+        <div id="pane-custom-rules" class="tab-pane">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="card">
+              <div class="card-title">✅ <span data-i18n="whitelistTitle">Custom Whitelist (Always Allowed)</span></div>
+              <div style="display: flex; gap: 0.4rem; margin-bottom: 0.75rem;">
+                <input type="text" id="inputWhitelist" placeholder="domain.com" class="input-text" style="flex: 1;">
+                <button class="btn btn-success btn-sm" onclick="addWhitelist()">+ Add</button>
+              </div>
+              <table>
+                <thead><tr><th>Domain</th><th style="text-align: right;">Action</th></tr></thead>
+                <tbody id="whitelistBody"></tbody>
+              </table>
+            </div>
+
+            <div class="card">
+              <div class="card-title">🚫 <span data-i18n="blacklistTitle">Custom Blacklist (Always Blocked)</span></div>
+              <div style="display: flex; gap: 0.4rem; margin-bottom: 0.75rem;">
+                <input type="text" id="inputBlacklist" placeholder="baddomain.com" class="input-text" style="flex: 1;">
+                <button class="btn btn-danger btn-sm" onclick="addBlacklist()">+ Block</button>
+              </div>
+              <table>
+                <thead><tr><th>Domain</th><th style="text-align: right;">Action</th></tr></thead>
+                <tbody id="blacklistBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 8: LOCAL DNS REWRITES -->
+        <div id="pane-rewrites" class="tab-pane">
+          <div class="card">
+            <div class="card-title" data-i18n="rewritesTitle">Local DNS Rewrites (Custom Domain to LAN IP)</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;" data-i18n="rewritesSubtitle">
+              Map custom local domains (e.g. <code>router.lan -> 192.168.100.1</code> or <code>nas.local -> 192.168.100.200</code>):
+            </div>
+            <div style="display: flex; gap: 0.45rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+              <input type="text" id="inputRewriteDomain" placeholder="Domain (router.lan)" class="input-text" style="flex: 1; min-width: 160px;">
+              <input type="text" id="inputRewriteIp" placeholder="Target IP (192.168.100.1)" class="input-text" style="flex: 1; min-width: 160px;">
+              <button class="btn btn-primary btn-sm" onclick="addDnsRewrite()">+ Save Rewrite</button>
+            </div>
+            <table>
+              <thead><tr><th>Domain</th><th>Target IP</th><th style="text-align: right;">Action</th></tr></thead>
+              <tbody id="rewritesTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 9: ROUTER SETUP GUIDE -->
+        <div id="pane-setup" class="tab-pane">
+          <div class="card">
+            <div class="card-title" data-i18n="routerGuideTitle">Router & Network Setup Guide</div>
+            <div class="card" style="border-left: 3px solid var(--accent); background: #0c1424; margin-bottom: 0.75rem;">
+              <div style="font-weight: 700; color: #fff;" data-i18n="guideIpLabel">Your AdShield DNS Server IP:</div>
+              <div style="font-size: 1.25rem; font-family: monospace; font-weight: bold; color: var(--accent); margin: 0.25rem 0;" id="setupGuideIp">127.0.0.1</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted);" data-i18n="guideIpDesc">Enter this IP address as the Primary DNS in your Wi-Fi router's DHCP settings.</div>
+            </div>
+            <div style="font-size: 0.76rem; line-height: 1.6;" data-i18n="guideSteps">
+              <b>Quick Router Steps (TP-Link, Asus, Tenda, Huawei, Mikrotik):</b>
+              <ol style="margin-left: 1.25rem; margin-top: 0.35rem;">
+                <li>Open browser and login to router admin (usually <code>192.168.1.1</code> or <code>192.168.100.1</code>).</li>
+                <li>Navigate to <b>LAN -> DHCP Server</b>.</li>
+                <li>Set <b>Primary DNS Server IP</b> to your AdShield IP shown above.</li>
+                <li>Set <b>Secondary DNS Server IP</b> to <code>1.1.1.1</code> (fallback).</li>
+                <li>Save and reconnect devices to Wi-Fi. All network traffic will now be filtered!</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 10: SETTINGS -->
+        <div id="pane-settings" class="tab-pane">
+          <!-- Windows Service Card (PRO) -->
+          <div class="card" style="border: 1px solid #3b82f6;">
+            <div class="card-title">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span>⚙️ Official Windows Service Manager</span>
+                <span class="badge" style="background: linear-gradient(135deg, #f59e0b, #ef4444); color: white;">PRO</span>
+              </div>
+            </div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.75rem;" data-i18n="serviceCardSubtitle">
+              Run AdShield automatically in the background at Windows boot before user login:
+            </div>
+            <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+              <span id="serviceStatusLabel" style="font-weight: 600; font-size: 0.78rem; color: #f59e0b;">Checking status...</span>
+              <button id="btnInstallService" class="btn btn-primary btn-sm" onclick="installService()">🚀 Install as Windows Service</button>
+              <button id="btnUninstallService" class="btn btn-danger btn-sm" onclick="uninstallService()" style="display: none;">Uninstall Service</button>
+            </div>
+          </div>
+
+          <!-- Teleporter Card (PRO) -->
+          <div class="card">
+            <div class="card-title">
+              <div style="display: flex; align-items: center; gap: 0.4rem;">
+                <span>📦 Teleporter: Backup & Restore</span>
+                <span class="badge" style="background: linear-gradient(135deg, #f59e0b, #ef4444); color: white;">PRO</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.65rem; align-items: center; flex-wrap: wrap;">
+              <button class="btn btn-secondary btn-sm" onclick="exportBackup()">📥 Download Backup (JSON)</button>
+              <input type="file" id="importBackupFile" accept=".json" style="display: none;" onchange="importBackup(event)">
+              <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importBackupFile').click()">📤 Restore from Backup</button>
+            </div>
+          </div>
+
+          <!-- Server Settings -->
+          <div class="card">
+            <div class="card-title">⚙️ <span data-i18n="dnsConfigTitle">DNS Upstream Configuration</span></div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem;">
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Upstream DNS Provider</label>
+                <select id="settingUpstream" class="input-text" style="width: 100%;" onchange="toggleCustomDnsInput()">
+                  <option value="Cloudflare">Cloudflare (1.1.1.1, 1.0.0.1)</option>
+                  <option value="Google">Google (8.8.8.8, 8.8.4.4)</option>
+                  <option value="Quad9">Quad9 Secure (9.9.9.9)</option>
+                  <option value="AdGuard">AdGuard DNS (94.140.14.14)</option>
+                  <option value="Custom">Custom DNS Server</option>
+                </select>
+              </div>
+
+              <div id="customDnsGroup" style="display: none;">
+                <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Custom DNS IPs (comma-separated)</label>
+                <input type="text" id="settingCustomDns" placeholder="1.1.1.1, 8.8.8.8" class="input-text" style="width: 100%;">
+              </div>
+
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Blocking Return IP</label>
+                <select id="settingBlockingMode" class="input-text" style="width: 100%;">
+                  <option value="0.0.0.0">0.0.0.0 (Fastest & Standard)</option>
+                  <option value="NXDOMAIN">NXDOMAIN (Domain Not Found)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Rate Limit (RPS per Client)</label>
+                <input type="number" id="settingRateLimitRps" value="100" class="input-text" style="width: 100%;">
+              </div>
+            </div>
+
+            <div style="margin-top: 0.75rem;">
+              <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; cursor: pointer;">
+                <input type="checkbox" id="settingAutostart"> <span data-i18n="autostartLabel">Run automatically on Windows startup</span>
+              </label>
+            </div>
+
+            <div style="margin-top: 0.85rem; display: flex; gap: 0.4rem;">
+              <button class="btn btn-primary btn-sm" onclick="saveSettings()">💾 <span data-i18n="btnSaveSettings">Save Settings</span></button>
+              <button class="btn btn-secondary btn-sm" onclick="clearDnsCache()">🧹 <span data-i18n="btnClearCache">Clear RAM Cache</span></button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- LICENSE & PRO ACTIVATION MODAL -->
+  <div id="licenseModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">⭐ <span data-i18n="modalProTitle">AdShield DNS Pro Edition</span></div>
+
+      <div id="modalFeatureNotice" style="display: none; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); color: #fbbf24; padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.76rem; font-weight: 600; margin-bottom: 0.75rem;"></div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.65rem; margin-bottom: 0.85rem;">
+        <!-- Left: Standard -->
+        <div style="background: #090e1c; border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 0.65rem;">
+          <div style="font-size: 0.72rem; font-weight: 700; color: #34d399; margin-bottom: 0.25rem;" data-i18n="tierStandardTitle">🟢 STANDARD EDITION</div>
+          <ul style="font-size: 0.68rem; color: #cbd5e1; list-style: none; display: flex; flex-direction: column; gap: 2px;">
+            <li>✓ 1,000,000+ Smart Filter Rules</li>
+            <li>✓ Per-Device Client Profiles</li>
+            <li>✓ 1-Click App & Service Blocker</li>
+            <li>✓ Local DNS Rewrites</li>
+            <li>✓ SafeSearch Google & YouTube</li>
+            <li>✓ In-Memory RAM Caching</li>
+          </ul>
+        </div>
+
+        <!-- Right: PRO -->
+        <div style="background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 0.65rem;">
+          <div style="font-size: 0.72rem; font-weight: 700; color: #fbbf24; margin-bottom: 0.25rem;" data-i18n="tierProTitle">⭐ PRO EDITION</div>
+          <ul style="font-size: 0.68rem; color: #f8fafc; list-style: none; display: flex; flex-direction: column; gap: 2px;">
+            <li>★ 1-Click Static IP Adapter Lock</li>
+            <li>★ Anti-ISP Hijacking (DoH Only)</li>
+            <li>★ Live 7-Server Latency Benchmark</li>
+            <li>★ Smart Eco-Mode (24/7 Lid-Close)</li>
+            <li>★ Automated 24h Filter Updates</li>
+            <li>★ Windows Service Integration</li>
+            <li>★ Teleporter 1-Click Cloud/JSON</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 0.65rem;">
+        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;" data-i18n="inputCodeLabel">Enter License Key or Promo Coupon:</label>
+        <input type="text" id="inputLicenseCode" class="input-text" style="width: 100%; font-family: monospace; font-size: 0.88rem; font-weight: bold; text-transform: uppercase;" placeholder="PRO-VIP-2026 or BETA-TESTER">
+      </div>
+
+      <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.85rem; line-height: 1.4;">
+        Machine ID: <code id="modalMachineId" style="color: #38bdf8; font-weight: bold;">-</code><br>
+        <span style="color: #10b981;">💡 Quick VIP Coupon: 
+          <code style="cursor: pointer; text-decoration: underline;" onclick="applyVipCode('PRO-VIP-2026')">PRO-VIP-2026</code> • 
+          <code style="cursor: pointer; text-decoration: underline;" onclick="applyVipCode('BETA-TESTER')">BETA-TESTER</code>
+        </span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.75rem;">
+        <button class="btn btn-secondary btn-sm" onclick="closeLicenseModal()">Close</button>
+        <div style="display: flex; gap: 0.4rem;">
+          <button class="btn btn-warning btn-sm" onclick="applyVipCode('PRO-VIP-2026')">Use VIP Coupon</button>
+          <button class="btn btn-success btn-sm" onclick="submitLicenseActivation()">Activate PRO</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Edit Modal -->
+  <div id="clientModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">📱 <span data-i18n="clientModalTitle">Configure Client Device</span></div>
+      <div style="margin-bottom: 0.65rem;">
+        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Client IP Address</label>
+        <input type="text" id="modalClientIp" class="input-text" style="width: 100%;" placeholder="192.168.100.xxx">
+      </div>
+      <div style="margin-bottom: 0.65rem;">
+        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Device Name</label>
+        <input type="text" id="modalClientName" class="input-text" style="width: 100%;" placeholder="Kid Phone / Dad Laptop">
+      </div>
+      <div style="margin-bottom: 0.65rem;">
+        <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.2rem;">Policy Profile</label>
+        <select id="modalClientProfile" class="input-text" style="width: 100%;">
+          <option value="standard">Standard (Block Ads & Trackers)</option>
+          <option value="kids">Kids (SafeSearch + Block Games & TikTok + Adult)</option>
+          <option value="work">Work / Office (Block Social Media & Games)</option>
+          <option value="bypass">Developer Bypass (No Filtering)</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 0.85rem;">
+        <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; cursor: pointer;">
+          <input type="checkbox" id="modalClientSafeSearch"> Enforce SafeSearch (Google, YouTube Restricted, Bing)
+        </label>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.4rem;">
+        <button class="btn btn-secondary btn-sm" onclick="closeClientModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="saveClientProfile()">Save Profile</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pause Modal -->
+  <div id="pauseModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 360px;">
+      <div class="modal-title">⏸️ Pause Blocking</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.85rem;">
+        Select pause duration:
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.45rem; margin-bottom: 0.85rem;">
+        <button class="btn btn-secondary" onclick="executePause(5)">5 Minutes</button>
+        <button class="btn btn-secondary" onclick="executePause(15)">15 Minutes</button>
+        <button class="btn btn-secondary" onclick="executePause(60)">1 Hour</button>
+        <button class="btn btn-danger" onclick="executePause(0)">Pause Indefinitely</button>
+      </div>
+      <div style="text-align: right;">
+        <button class="btn btn-secondary btn-sm" onclick="closePauseModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // INTERNATIONALIZATION (i18n) DICTIONARY
+    const I18N = {
+      en: {
+        appSubtitle: "Universal DNS Security",
+        navSecMain: "Main",
+        navDashboard: "Dashboard",
+        navClients: "Clients & Devices",
+        navLogs: "Query History",
+        navSecProtection: "Protection",
+        navServices: "Block Services",
+        navBenchmark: "Anti-ISP & Benchmark",
+        navBlocklists: "Filter Lists",
+        navCustomRules: "Custom Rules",
+        navSecNetwork: "Network & Settings",
+        navRewrites: "DNS Rewrites",
+        navRouter: "Router Setup",
+        navSettings: "Settings",
+        licenseStatus: "License",
+        btnUpgradePro: "⭐ Upgrade to PRO",
+        btnPause: "Pause",
+        btnResume: "Resume",
+        btnCopyIp: "Copy IP",
+        statusActive: "Active",
+        statusPaused: "Paused",
+        protectPcTitle: "Protect This PC",
+        btnEnablePc: "Enable DNS",
+        btnRestoreDhcp: "DHCP",
+        btnLockIp: "Lock IP",
+        powerTitle: "Laptop 24/7 Engine",
+        autoUpdateSubtitle: "Auto-Update: Daily",
+        btnPowerSettings: "Lid Config",
+        btnUpdateNow: "Update",
+        statTotalQueries: "DNS Queries",
+        statQueriesSub: "From all LAN clients",
+        statBlocked: "Blocked Ads",
+        statActiveRules: "Active Rules",
+        statAvgLatency: "DNS Latency",
+        testBarTitle: "🔍 Test DNS:",
+        btnTest: "Run Test",
+        tableTopBlocked: "🚫 Top Blocked Domains",
+        tableTopAllowed: "✅ Top Allowed Domains",
+        tableTopClients: "📱 Top Client Devices",
+        colDomain: "Domain",
+        colBlocked: "Blocked",
+        colHits: "Hits",
+        colClient: "Device / IP",
+        colQueries: "Queries",
+        colIp: "IP Address",
+        colMac: "MAC / Vendor",
+        colDeviceName: "Device Name",
+        colProfile: "Profile",
+        colActions: "Actions",
+        clientsCardTitle: "LAN Connected Devices (Per-Device Filtering)",
+        clientsCardSubtitle: "Assign different filtering profiles for kids, work, or developer bypass:",
+        btnAddClient: "+ Add Device Manually",
+        logsCardTitle: "Real-Time DNS Query History",
+        servicesCardTitle: "1-Click Service & App Blocker",
+        servicesCardSubtitle: "Block entire applications across all network devices with one click:",
+        dohOnlyDesc: "Routes all outgoing DNS queries strictly through encrypted HTTPS (DoH) tunnels, preventing ISP DNS interception.",
+        benchmarkTitle: "Live DNS Upstream Latency Benchmark",
+        btnRunBenchmark: "Test Latency",
+        benchmarkPlaceholder: "Click button above to benchmark 7 global resolvers.",
+        blocklistTitle: "Active Filter Lists & Threat Feeds",
+        btnUpdateAllFilters: "🔄 Update All Lists",
+        addBlocklistTitle: "+ Add Custom Blocklist URL",
+        btnAddSource: "Add Source",
+        whitelistTitle: "Custom Whitelist (Always Allowed)",
+        blacklistTitle: "Custom Blacklist (Always Blocked)",
+        rewritesTitle: "Local DNS Rewrites (Custom Domain to LAN IP)",
+        rewritesSubtitle: "Map custom local domains (e.g. router.lan -> 192.168.100.1):",
+        routerGuideTitle: "Router & Network Setup Guide",
+        guideIpLabel: "Your AdShield DNS Server IP:",
+        guideIpDesc: "Enter this IP address as the Primary DNS in your Wi-Fi router's DHCP settings.",
+        serviceCardSubtitle: "Run AdShield automatically in the background at Windows boot before user login:",
+        dnsConfigTitle: "DNS Upstream Configuration",
+        autostartLabel: "Run automatically on Windows startup",
+        btnSaveSettings: "Save Settings",
+        btnClearCache: "Clear RAM Cache",
+        modalProTitle: "AdShield DNS Pro Edition",
+        tierStandardTitle: "🟢 STANDARD EDITION",
+        tierProTitle: "⭐ PRO EDITION",
+        inputCodeLabel: "Enter License Key or Promo Coupon:",
+        clientModalTitle: "Configure Client Device"
+      },
+      id: {
+        appSubtitle: "Keamanan DNS Universal",
+        navSecMain: "Menu Utama",
+        navDashboard: "Dashboard",
+        navClients: "Klien & Perangkat",
+        navLogs: "Riwayat Query",
+        navSecProtection: "Proteksi",
+        navServices: "Blokir Layanan",
+        navBenchmark: "Anti-ISP & Benchmark",
+        navBlocklists: "Daftar Filter",
+        navCustomRules: "Aturan Kustom",
+        navSecNetwork: "Jaringan & Pengaturan",
+        navRewrites: "DNS Rewrite",
+        navRouter: "Panduan Router",
+        navSettings: "Pengaturan",
+        licenseStatus: "Status Lisensi",
+        btnUpgradePro: "⭐ Buka Fitur PRO",
+        btnPause: "Jeda",
+        btnResume: "Lanjutkan",
+        btnCopyIp: "Salin IP",
+        statusActive: "Aktif",
+        statusPaused: "Dijeda",
+        protectPcTitle: "Proteksi Laptop Ini",
+        btnEnablePc: "Aktifkan DNS",
+        btnRestoreDhcp: "DHCP",
+        btnLockIp: "Kunci IP",
+        powerTitle: "Manajemen 24 Jam",
+        autoUpdateSubtitle: "Auto-Update: Harian",
+        btnPowerSettings: "Tutup Layar",
+        btnUpdateNow: "Perbarui",
+        statTotalQueries: "Permintaan DNS",
+        statQueriesSub: "Dari seluruh perangkat LAN",
+        statBlocked: "Iklan Diblokir",
+        statActiveRules: "Aturan Aktif",
+        statAvgLatency: "Latensi DNS",
+        testBarTitle: "🔍 Uji DNS:",
+        btnTest: "Uji Sekarang",
+        tableTopBlocked: "🚫 Top Iklan Diblokir",
+        tableTopAllowed: "✅ Top Domain Diakses",
+        tableTopClients: "📱 Top Perangkat Klien",
+        colDomain: "Domain",
+        colBlocked: "Diblokir",
+        colHits: "Akses",
+        colClient: "Perangkat / IP",
+        colQueries: "Query",
+        colIp: "IP Address",
+        colMac: "MAC / Vendor",
+        colDeviceName: "Nama Perangkat",
+        colProfile: "Profil",
+        colActions: "Aksi",
+        clientsCardTitle: "Perangkat Terhubung LAN (Aturan Per-Perangkat)",
+        clientsCardSubtitle: "Tentukan kebijakan khusus untuk HP anak, laptop kerja, atau bypass developer:",
+        btnAddClient: "+ Tambah Klien Manual",
+        logsCardTitle: "Riwayat Kueri DNS Real-Time",
+        servicesCardTitle: "1-Klik Blokir Layanan & Aplikasi",
+        servicesCardSubtitle: "Blokir seluruh aplikasi untuk semua perangkat hanya dengan satu klik:",
+        dohOnlyDesc: "Meneruskan seluruh kueri keluar hanya melalui HTTPS (DoH) terenkripsi, kebal sensor ISP.",
+        benchmarkTitle: "Uji Latensi Upstream DNS Nyata",
+        btnRunBenchmark: "Uji Latensi",
+        benchmarkPlaceholder: "Klik tombol di atas untuk menguji 7 resolver global.",
+        blocklistTitle: "Daftar Filter & Threat Feeds Aktif",
+        btnUpdateAllFilters: "🔄 Perbarui Semua Filter",
+        addBlocklistTitle: "+ Tambah URL Blocklist Kustom",
+        btnAddSource: "Tambah Sumber",
+        whitelistTitle: "Whitelist Kustom (Selalu Diizinkan)",
+        blacklistTitle: "Blacklist Kustom (Selalu Diblokir)",
+        rewritesTitle: "DNS Rewrite Lokal (Domain Kustom ke IP LAN)",
+        rewritesSubtitle: "Petakan domain lokal (contoh: router.lan -> 192.168.100.1):",
+        routerGuideTitle: "Panduan Setting Router & Wi-Fi",
+        guideIpLabel: "IP Server DNS AdShield Anda:",
+        guideIpDesc: "Masukkan IP ini sebagai Primary DNS di pengaturan DHCP router Wi-Fi Anda.",
+        serviceCardSubtitle: "Jalankan AdShield otomatis di background sejak Windows menyala sebelum login:",
+        dnsConfigTitle: "Konfigurasi Upstream DNS",
+        autostartLabel: "Jalankan otomatis saat Windows startup",
+        btnSaveSettings: "Simpan Pengaturan",
+        btnClearCache: "Kosongkan RAM Cache",
+        modalProTitle: "AdShield DNS Edisi Pro",
+        tierStandardTitle: "🟢 EDISI STANDAR",
+        tierProTitle: "⭐ EDISI PRO",
+        inputCodeLabel: "Masukkan Kode Lisensi atau Kupon Promo:",
+        clientModalTitle: "Konfigurasi Perangkat Klien"
+      }
+    };
+
+    let currentLang = localStorage.getItem('adshield_lang') || 'en';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('adshield_lang', lang);
+      document.getElementById('langEnBtn').classList.toggle('active', lang === 'en');
+      document.getElementById('langIdBtn').classList.toggle('active', lang === 'id');
+      applyLanguage(lang);
+      if (typeof fetchOverview === 'function') fetchOverview();
+    }
+
+    function applyLanguage(lang) {
+      const dict = I18N[lang] || I18N.en;
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          el.textContent = dict[key];
+        }
+      });
+      document.title = "AdShield DNS";
+    }
+
+    // STATE VARIABLES
+    let globalLanIp = '127.0.0.1';
+    let currentTab = 'dashboard';
+    let lastRenderedTables = { blocked: '', allowed: '', clients: '' };
+
+    // TAB NAVIGATION
+    function navTo(tabId, title) {
+      currentTab = tabId;
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      const pane = document.getElementById(`pane-${tabId}`);
+      if (pane) pane.classList.add('active');
+      document.getElementById('breadcrumbCurrent').textContent = title;
+
+      if (tabId === 'logs') fetchLogs();
+      if (tabId === 'clients') fetchClients();
+      if (tabId === 'services') fetchServices();
+      if (tabId === 'rewrites') fetchRewrites();
+      if (tabId === 'blocklists') fetchBlocklists();
+      if (tabId === 'custom-rules') fetchCustomRules();
+      if (tabId === 'settings') fetchSettings();
+    }
+
+    // WINDOW CONTROLS
+    function minimizeToTray() {
+      alert(currentLang === 'id' 
+        ? 'AdShield tetap berjalan aman di System Tray (ikon perisai di dekat jam Windows).'
+        : 'AdShield continues running in the background (System Tray near Windows clock).');
+    }
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    // MAIN OVERVIEW FETCHER (SMART DOM DIFFING TO PREVENT FLICKERING)
+    async function fetchOverview() {
+      try {
+        const res = await fetch('/api/overview');
+        const data = await res.json();
+
+        // Hide startup splash once first response succeeds
+        const splash = document.getElementById('startupSplash');
+        if (splash && splash.style.display !== 'none') {
+          document.getElementById('splashProgressBar').style.width = '100%';
+          document.getElementById('splashStatusText').textContent = currentLang === 'id' ? 'Siap digunakan!' : 'Ready!';
+          setTimeout(() => {
+            splash.style.opacity = '0';
+            setTimeout(() => { splash.style.display = 'none'; }, 350);
+          }, 200);
+        }
+
+        // LAN IP
+        if (data.lan_ips && data.lan_ips.length > 0) {
+          globalLanIp = data.lan_ips[0];
+          setSafeText('setupGuideIp', globalLanIp);
+        }
+
+        // Stats with value diffing
+        setSafeText('statTotalQueries', (data.dns.total_queries || 0).toLocaleString());
+        setSafeText('statBlockedQueries', (data.dns.blocked_queries || 0).toLocaleString());
+        setSafeText('statBlockedPct', `${data.dns.blocked_percentage || 0}% ${currentLang === 'id' ? 'dari trafik' : 'of traffic'}`);
+        setSafeText('statTotalRules', (data.blocklist.total_blocked_rules || 0).toLocaleString());
+        setSafeText('statLatency', `${data.dns.avg_latency_ms || 0} ms`);
+        setSafeText('statCacheInfo', `RAM Cache: ${data.dns.cache_size || 0} ${currentLang === 'id' ? 'entri' : 'entries'}`);
+
+        // Blocking State
+        const badge = document.getElementById('statusBadge');
+        const text = document.getElementById('statusText');
+        const pauseBtn = document.getElementById('btnPauseToggle');
+
+        if (data.is_blocking_active) {
+          badge.className = 'status-badge status-active';
+          text.textContent = currentLang === 'id' ? 'Aktif' : 'Active';
+          pauseBtn.innerHTML = `⏸️ <span>${currentLang === 'id' ? 'Jeda' : 'Pause'}</span>`;
+          pauseBtn.className = 'btn btn-warning btn-sm';
+          pauseBtn.onclick = openPauseModal;
+        } else {
+          badge.className = 'status-badge status-paused';
+          text.textContent = currentLang === 'id' ? 'Dijeda' : 'Paused';
+          pauseBtn.innerHTML = `▶️ <span>${currentLang === 'id' ? 'Lanjutkan' : 'Resume'}</span>`;
+          pauseBtn.className = 'btn btn-success btn-sm';
+          pauseBtn.onclick = resumeBlocking;
+        }
+
+        // Power Status
+        if (data.power_status) {
+          const pm = currentLang === 'id'
+            ? (data.power_status.power_mode_id || data.power_status.power_mode)
+            : (data.power_status.power_mode || data.power_status.power_mode_id);
+          setSafeText('powerModeText', pm);
+        }
+
+        // Static IP Lock Status
+        if (data.adapter_ip_info) {
+          const ipInfo = data.adapter_ip_info;
+          setSafeText('currentAdapterIp', ipInfo.ip);
+          const lockBadge = document.getElementById('ipLockStatusBadge');
+          const btnLock = document.getElementById('btnLockIp');
+          const btnUnlock = document.getElementById('btnUnlockIp');
+
+          if (ipInfo.is_locked) {
+            lockBadge.textContent = 'STATIC (LOCKED)';
+            lockBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+            lockBadge.style.color = '#34d399';
+            btnLock.style.display = 'none';
+            btnUnlock.style.display = 'inline-flex';
+          } else {
+            lockBadge.textContent = 'DHCP';
+            lockBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+            lockBadge.style.color = '#fbbf24';
+            btnLock.style.display = 'inline-flex';
+            btnUnlock.style.display = 'none';
+          }
+        }
+
+        // License Status
+        if (data.license) {
+          const lic = data.license;
+          const sidePill = document.getElementById('sidebarTierPill');
+          const footPill = document.getElementById('footerTierBadge');
+          const footDesc = document.getElementById('footerTierDesc');
+          const btnUp = document.getElementById('btnUpgradeSidebar');
+          document.getElementById('modalMachineId').textContent = lic.machine_id;
+
+          if (lic.is_pro) {
+            sidePill.className = 'pill-tier pill-pro';
+            sidePill.textContent = 'PRO';
+            footPill.className = 'pill-tier pill-pro';
+            footPill.textContent = 'PRO';
+            footDesc.textContent = lic.label || (currentLang === 'id' ? 'Lisensi Pro Lifetime Aktif' : 'Lifetime Pro License Active');
+            btnUp.style.display = 'none';
+          } else {
+            sidePill.className = 'pill-tier pill-basic';
+            sidePill.textContent = 'BASIC';
+            footPill.className = 'pill-tier pill-basic';
+            footPill.textContent = 'BASIC';
+            footDesc.textContent = currentLang === 'id' ? 'Proteksi Inti Standar Aktif' : 'Standard Core Protection Active';
+            btnUp.style.display = 'flex';
+          }
+        }
+
+        // Service badge
+        document.getElementById('serviceBadge').style.display = data.is_service_installed ? 'inline-block' : 'none';
+
+        // Local PC DNS Status
+        const adapter = data.adapter_name || 'Wi-Fi';
+        setSafeText('adapterNameText', adapter);
+        const statusSpan = document.getElementById('localDnsStatusText');
+        const btnApply = document.getElementById('btnApplyLocalDns');
+        const btnReset = document.getElementById('btnResetLocalDns');
+
+        if (data.is_local_dns_applied) {
+          statusSpan.textContent = currentLang === 'id' ? 'Aktif' : 'Active';
+          statusSpan.style.color = '#34d399';
+          btnApply.style.display = 'none';
+          btnReset.style.display = 'inline-flex';
+        } else {
+          statusSpan.textContent = currentLang === 'id' ? 'Bukan DNS AdShield' : 'Not Configured';
+          statusSpan.style.color = '#f59e0b';
+          btnApply.style.display = 'inline-flex';
+          btnReset.style.display = 'none';
+        }
+
+        // Smart-Diff Table Rendering (Prevents DOM thrashing & flicker)
+        renderTopListDiff('topBlockedBody', data.dns.top_blocked, 'blocked');
+        renderTopListDiff('topAllowedBody', data.dns.top_allowed, 'allowed');
+        renderTopListDiff('topClientsBody', data.dns.top_clients, 'clients');
+
+        // DoH Only Toggle
+        document.getElementById('dohOnlyToggle').checked = !!data.doh_only;
+
+      } catch (e) {
+        console.error('Error fetching overview:', e);
+      }
+    }
+
+    function setSafeText(id, text) {
+      const el = document.getElementById(id);
+      if (el && el.textContent !== String(text)) {
+        el.textContent = text;
+      }
+    }
+
+    function renderTopListDiff(elementId, items, cacheKey) {
+      const json = JSON.stringify(items || []);
+      if (lastRenderedTables[cacheKey] === json) return; // Skip if no data change!
+      lastRenderedTables[cacheKey] = json;
+
+      const tbody = document.getElementById(elementId);
+      if (!tbody) return;
+
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; color: var(--text-muted); font-size: 0.72rem;">${currentLang === 'id' ? 'Belum ada data' : 'No data yet'}</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = items.map(([name, count]) => `
+        <tr>
+          <td style="font-family: monospace; font-size: 0.73rem; word-break: break-all; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${name}</td>
+          <td style="text-align: right; font-weight: bold; color: #38bdf8; font-size: 0.73rem;">${count.toLocaleString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    // STATIC IP LOCKING (PRO)
+    async function lockStaticIp() {
+      const btn = document.getElementById('btnLockIp');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/adapter-ip/lock', { method: 'POST' });
+        const data = await res.json();
+        if (data.status === 'pro_required') {
+          openLicenseModal(currentLang === 'id' 
+            ? 'Fitur Penguncian IP Adapter Statis adalah fitur Pro eksklusif!'
+            : 'Static IP Adapter Lock is an exclusive Pro feature!');
+          btn.disabled = false;
+          return;
+        }
+        alert(data.message);
+      } catch(e) { alert('Error: ' + e); }
+      btn.disabled = false;
+      fetchOverview();
+    }
+
+    async function unlockStaticIp() {
+      if (!confirm(currentLang === 'id' ? 'Kembalikan IP PC ke DHCP otomatis?' : 'Restore PC IP to DHCP automatic?')) return;
+      const btn = document.getElementById('btnUnlockIp');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/adapter-ip/unlock', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+      } catch(e) { alert('Error: ' + e); }
+      btn.disabled = false;
+      fetchOverview();
+    }
+
+    // LICENSE & PRO MODAL
+    function openLicenseModal(noticeMsg) {
+      const noticeBox = document.getElementById('modalFeatureNotice');
+      if (noticeBox) {
+        if (noticeMsg) {
+          noticeBox.textContent = noticeMsg;
+          noticeBox.style.display = 'block';
+        } else {
+          noticeBox.style.display = 'none';
+        }
+      }
+      document.getElementById('licenseModal').classList.add('active');
+    }
+
+    function closeLicenseModal() {
+      document.getElementById('licenseModal').classList.remove('active');
+    }
+
+    function applyVipCode(code) {
+      document.getElementById('inputLicenseCode').value = code;
+    }
+
+    async function submitLicenseActivation() {
+      const code = document.getElementById('inputLicenseCode').value.trim();
+      if (!code) return alert(currentLang === 'id' ? 'Masukkan kode lisensi atau kupon' : 'Enter license key or coupon');
+
+      try {
+        const res = await fetch('/api/license/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        alert(data.message);
+        if (data.success) {
+          closeLicenseModal();
+          fetchOverview();
+        }
+      } catch(e) {
+        alert('Activation failed: ' + e);
+      }
+    }
+
+    // CLIENTS MANAGEMENT
+    async function fetchClients() {
+      try {
+        const res = await fetch('/api/clients');
+        const data = await res.json();
+        const tbody = document.getElementById('clientsTableBody');
+
+        if (!data.devices || data.devices.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">${currentLang === 'id' ? 'Tidak ada perangkat di ARP table.' : 'No devices detected in ARP table.'}</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data.devices.map(d => {
+          let badgeColor = '#3b82f6';
+          if (d.profile === 'kids') badgeColor = '#f59e0b';
+          if (d.profile === 'bypass') badgeColor = '#64748b';
+
+          return `
+            <tr>
+              <td style="font-family: monospace; font-weight: bold; color: #fff;">${d.ip}</td>
+              <td style="font-family: monospace; color: var(--text-muted); font-size: 0.72rem;">${d.mac} <span style="color:#64748b;">(${d.vendor})</span></td>
+              <td style="font-weight: 600;">${d.name || '-'}</td>
+              <td><span class="badge" style="background: ${badgeColor}22; color: ${badgeColor};">${d.profile.toUpperCase()}</span></td>
+              <td>${d.safesearch ? '✅ On' : '❌ Off'}</td>
+              <td style="text-align: right;">
+                <button class="btn btn-secondary btn-sm" onclick="editClient('${d.ip}', '${d.name}', '${d.profile}', ${d.safesearch})">Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteClient('${d.ip}')">Del</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Error fetching clients:', e);
+      }
+    }
+
+    function openAddClientModal() {
+      document.getElementById('modalClientIp').value = '';
+      document.getElementById('modalClientName').value = '';
+      document.getElementById('modalClientProfile').value = 'standard';
+      document.getElementById('modalClientSafeSearch').checked = false;
+      document.getElementById('clientModal').classList.add('active');
+    }
+
+    function editClient(ip, name, profile, ss) {
+      document.getElementById('modalClientIp').value = ip;
+      document.getElementById('modalClientName').value = (name && name !== '-') ? name : '';
+      document.getElementById('modalClientProfile').value = profile || 'standard';
+      document.getElementById('modalClientSafeSearch').checked = !!ss;
+      document.getElementById('clientModal').classList.add('active');
+    }
+
+    function closeClientModal() {
+      document.getElementById('clientModal').classList.remove('active');
+    }
+
+    async function saveClientProfile() {
+      const ip = document.getElementById('modalClientIp').value.trim();
+      const name = document.getElementById('modalClientName').value.trim();
+      const profile = document.getElementById('modalClientProfile').value;
+      const safesearch = document.getElementById('modalClientSafeSearch').checked;
+
+      if (!ip) return alert('IP Address is required');
+
+      await fetch('/api/clients/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip, name, profile, safesearch })
+      });
+      closeClientModal();
+      fetchClients();
+    }
+
+    async function deleteClient(ip) {
+      if (!confirm(`Delete custom policy for ${ip}?`)) return;
+      await fetch('/api/clients/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ip })
+      });
+      fetchClients();
+    }
+
+    // SERVICES CATALOG
+    async function fetchServices() {
+      try {
+        const res = await fetch('/api/services');
+        const data = await res.json();
+        const grid = document.getElementById('servicesGrid');
+
+        grid.innerHTML = data.services.map(s => `
+          <div class="card" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.82rem;">${s.name}</div>
+              <div style="font-size: 0.68rem; color: var(--text-muted);">${s.domains_count} target domains</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" ${s.enabled ? 'checked' : ''} onchange="toggleService('${s.id}', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        `).join('') + `
+          <div class="card" style="margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; border-color: #f59e0b; padding: 0.65rem 0.85rem;">
+            <div>
+              <div style="font-weight: 700; font-size: 0.82rem; color: #fbbf24;">🔍 SafeSearch Universal</div>
+              <div style="font-size: 0.68rem; color: var(--text-muted);">Enforce SafeSearch for Google, YouTube, Bing, DuckDuckGo</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" ${data.safesearch ? 'checked' : ''} onchange="toggleService('safesearch', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        `;
+      } catch (e) {
+        console.error('Error fetching services:', e);
+      }
+    }
+
+    async function toggleService(service, enabled) {
+      await fetch('/api/services/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ service, enabled })
+      });
+      fetchServices();
+      fetchOverview();
+    }
+
+    // BENCHMARK & ANTI-ISP (PRO)
+    async function runBenchmark() {
+      const btn = document.getElementById('btnRunBenchmark');
+      btn.disabled = true;
+      btn.textContent = '⏳ Testing...';
+      const tbody = document.getElementById('benchmarkBody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #38bdf8;">Benchmarking latency across 7 global upstream resolvers...</td></tr>';
+
+      try {
+        const res = await fetch('/api/benchmark');
+        const data = await res.json();
+        if (data.status === 'pro_required') {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 1.25rem; color: #fbbf24;">
+            <div style="font-weight: bold; margin-bottom: 0.4rem;">⭐ AdShield DNS Pro Exclusive Feature</div>
+            <div style="font-size: 0.76rem; color: var(--text-muted); margin-bottom: 0.65rem;">${data.message}</div>
+            <button class="btn btn-warning btn-sm" onclick="openLicenseModal('${data.message}')">Enter License or Coupon</button>
+          </td></tr>`;
+          openLicenseModal(data.message);
+          btn.disabled = false;
+          btn.textContent = '🚀 Test Latency';
+          return;
+        }
+
+        tbody.innerHTML = data.results.map((r, idx) => {
+          const isFastest = idx === 0 && r.latency_ms > 0;
+          return `
+            <tr>
+              <td style="font-weight: 700;">
+                ${r.name} ${isFastest ? '<span class="badge" style="background:#10b981; color:#fff;">🏆 FASTEST</span>' : ''}
+              </td>
+              <td><span style="font-size: 0.72rem; color: var(--text-muted);">${r.type}</span></td>
+              <td style="font-family: monospace; font-size: 0.74rem;">${r.target}</td>
+              <td style="font-weight: bold; font-size: 0.85rem; color: ${r.latency_ms < 40 ? '#34d399' : (r.latency_ms < 100 ? '#fbbf24' : '#f87171')};">
+                ${r.latency_ms > 0 ? r.latency_ms + ' ms' : 'Timeout'}
+              </td>
+              <td><span class="badge ${r.status === 'Online' ? 'badge-forwarded' : 'badge-blocked'}">${r.status}</span></td>
+              <td style="text-align: right;">
+                <button class="btn btn-secondary btn-sm" onclick="setFastestUpstream('${r.target}')">Use This</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger);">Benchmark failed: ' + e + '</td></tr>';
+      }
+      btn.disabled = false;
+      btn.textContent = '🚀 Test Latency';
+    }
+
+    async function setFastestUpstream(target) {
+      if (target.startsWith('http')) {
+        alert('Encrypted DoH resolver selected via DoH engine!');
+        return;
+      }
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upstream_provider: 'Custom', custom_dns: [target] })
+      });
+      alert(`Upstream DNS updated to: ${target}`);
+      fetchOverview();
+    }
+
+    async function toggleDohOnly(checkbox) {
+      const enabled = checkbox.checked;
+      try {
+        const res = await fetch('/api/settings/doh-only', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ doh_only: enabled })
+        });
+        const data = await res.json();
+        if (data.status === 'pro_required') {
+          checkbox.checked = !enabled;
+          openLicenseModal(data.message);
+          return;
+        }
+        alert(enabled ? 'Anti-ISP Hijacking ACTIVE: All queries encrypted via DoH.' : 'DoH Only mode disabled.');
+        fetchOverview();
+      } catch(e) {
+        alert('Failed: ' + e);
+        checkbox.checked = !enabled;
+      }
+    }
+
+    // QUERY LOGS
+    async function fetchLogs() {
+      const filter = document.getElementById('logFilter').value;
+      const search = document.getElementById('logSearchInput').value.trim();
+      try {
+        const res = await fetch(`/api/logs?limit=50&filter=${filter}&search=${encodeURIComponent(search)}`);
+        const data = await res.json();
+        const tbody = document.getElementById('queryLogBody');
+
+        if (!data.logs || data.logs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No queries recorded yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.logs.map(log => {
+          let badgeClass = 'badge-forwarded';
+          if (log.status === 'BLOCKED') badgeClass = 'badge-blocked';
+          else if (log.status === 'CACHED') badgeClass = 'badge-cached';
+          else if (log.status === 'REWRITE') badgeClass = 'badge-rewrite';
+          else if (log.status === 'SAFESEARCH') badgeClass = 'badge-safesearch';
+
+          const clientDisplay = log.client_name && log.client_name !== log.client ? `${log.client_name} (${log.client})` : log.client;
+
+          return `
+            <tr>
+              <td style="color: var(--text-muted); font-size: 0.72rem;">${log.time}</td>
+              <td><span class="badge ${badgeClass}">${log.status}</span></td>
+              <td style="font-family: monospace; font-size: 0.76rem; font-weight: 600;">${log.domain}</td>
+              <td style="color: var(--text-muted);">${log.type}</td>
+              <td style="font-size: 0.72rem; font-family: monospace;">${clientDisplay}</td>
+              <td style="color: var(--text-muted);">${log.duration} ms</td>
+              <td style="text-align: center;">
+                <button class="btn btn-secondary btn-sm" onclick="quickWhitelist('${log.domain}')" title="Allow">+ White</button>
+                <button class="btn btn-danger btn-sm" onclick="quickBlacklist('${log.domain}')" title="Block">- Black</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Error fetching logs:', e);
+      }
+    }
+
+    // REWRITES
+    async function fetchRewrites() {
+      try {
+        const res = await fetch('/api/rewrites');
+        const data = await res.json();
+        const tbody = document.getElementById('rewritesTableBody');
+
+        if (!data.rewrites || data.rewrites.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No rewrite rules configured</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.rewrites.map(rw => `
+          <tr>
+            <td style="font-family: monospace; font-weight: bold; color: #c084fc;">${rw.domain}</td>
+            <td style="font-family: monospace; color: #34d399;">${rw.ip}</td>
+            <td style="text-align: right;"><button class="btn btn-danger btn-sm" onclick="removeDnsRewrite('${rw.domain}')">Delete</button></td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error('Error fetching rewrites:', e);
+      }
+    }
+
+    async function addDnsRewrite() {
+      const domain = document.getElementById('inputRewriteDomain').value.trim();
+      const ip = document.getElementById('inputRewriteIp').value.trim();
+      if (!domain || !ip) return alert('Domain and Target IP required');
+
+      await fetch('/api/rewrites/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, ip })
+      });
+      document.getElementById('inputRewriteDomain').value = '';
+      document.getElementById('inputRewriteIp').value = '';
+      fetchRewrites();
+    }
+
+    async function removeDnsRewrite(domain) {
+      await fetch('/api/rewrites/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain })
+      });
+      fetchRewrites();
+    }
+
+    // BLOCKLISTS
+    async function fetchBlocklists() {
+      try {
+        const res = await fetch('/api/blocklists');
+        const data = await res.json();
+        document.getElementById('blocklistStatus').textContent = `Status: ${data.last_update_status || 'Ready'}`;
+        const tbody = document.getElementById('blocklistSourcesBody');
+
+        tbody.innerHTML = data.sources.map(src => `
+          <tr>
+            <td>
+              <input type="checkbox" ${src.enabled ? 'checked' : ''} onchange="toggleBlocklistSource('${src.id}', this.checked)">
+            </td>
+            <td style="font-weight: 700;">${src.name}</td>
+            <td style="font-family: monospace; font-size: 0.72rem; color: var(--text-muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${src.url}</td>
+            <td style="font-weight: bold; color: #38bdf8;">${(src.count || 0).toLocaleString()}</td>
+            <td style="color: var(--text-muted); font-size: 0.72rem;">${src.last_updated || '-'}</td>
+            <td><span class="badge ${src.enabled ? 'badge-forwarded' : 'badge-blocked'}">${src.enabled ? 'Enabled' : 'Disabled'}</span></td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error('Error fetching blocklists:', e);
+      }
+    }
+
+    async function toggleBlocklistSource(id, enabled) {
+      await fetch('/api/blocklists/toggle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, enabled })
+      });
+      fetchBlocklists();
+      fetchOverview();
+    }
+
+    async function triggerBlocklistUpdate() {
+      const btn = document.getElementById('btnUpdateAll');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('/api/blocklists/update', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+      } catch(e) { alert('Update failed: ' + e); }
+      if (btn) btn.disabled = false;
+      fetchBlocklists();
+      fetchOverview();
+    }
+
+    async function addCustomBlocklist() {
+      const name = document.getElementById('newListName').value.trim();
+      const url = document.getElementById('newListUrl').value.trim();
+      if (!name || !url) return alert('Filter name and URL required');
+
+      await fetch('/api/blocklists/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url })
+      });
+      document.getElementById('newListName').value = '';
+      document.getElementById('newListUrl').value = '';
+      fetchBlocklists();
+      alert('Source added successfully!');
+    }
+
+    // CUSTOM RULES
+    async function fetchCustomRules() {
+      try {
+        const res = await fetch('/api/lists');
+        const data = await res.json();
+
+        // Whitelist
+        const wBody = document.getElementById('whitelistBody');
+        wBody.innerHTML = (!data.whitelist || data.whitelist.length === 0)
+          ? '<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">No whitelist entries</td></tr>'
+          : data.whitelist.map(d => `
+            <tr>
+              <td style="font-family: monospace;">${d}</td>
+              <td style="text-align: right;"><button class="btn btn-secondary btn-sm" onclick="removeWhitelist('${d}')">Delete</button></td>
+            </tr>
+          `).join('');
+
+        // Blacklist
+        const bBody = document.getElementById('blacklistBody');
+        bBody.innerHTML = (!data.blacklist || data.blacklist.length === 0)
+          ? '<tr><td colspan="2" style="text-align: center; color: var(--text-muted);">No blacklist entries</td></tr>'
+          : data.blacklist.map(d => `
+            <tr>
+              <td style="font-family: monospace;">${d}</td>
+              <td style="text-align: right;"><button class="btn btn-secondary btn-sm" onclick="removeBlacklist('${d}')">Delete</button></td>
+            </tr>
+          `).join('');
+      } catch (e) {
+        console.error('Error fetching custom rules:', e);
+      }
+    }
+
+    async function addWhitelist() {
+      const domain = document.getElementById('inputWhitelist').value.trim();
+      if (!domain) return;
+      await fetch('/api/custom/whitelist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain })
+      });
+      document.getElementById('inputWhitelist').value = '';
+      fetchCustomRules();
+      fetchOverview();
+    }
+
+    async function removeWhitelist(domain) {
+      await fetch('/api/custom/whitelist/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain })
+      });
+      fetchCustomRules();
+      fetchOverview();
+    }
+
+    async function addBlacklist() {
+      const domain = document.getElementById('inputBlacklist').value.trim();
+      if (!domain) return;
+      await fetch('/api/custom/blacklist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain })
+      });
+      document.getElementById('inputBlacklist').value = '';
+      fetchCustomRules();
+      fetchOverview();
+    }
+
+    async function removeBlacklist(domain) {
+      await fetch('/api/custom/blacklist/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain })
+      });
+      fetchCustomRules();
+      fetchOverview();
+    }
+
+    async function quickWhitelist(domain) {
+      await fetch('/api/custom/whitelist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain })
+      });
+      alert(`${domain} added to whitelist!`);
+      fetchLogs();
+      fetchOverview();
+    }
+
+    async function quickBlacklist(domain) {
+      await fetch('/api/custom/blacklist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain })
+      });
+      alert(`${domain} blocked!`);
+      fetchLogs();
+      fetchOverview();
+    }
+
+    // SETTINGS & WINDOWS SERVICE
+    async function fetchSettings() {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        document.getElementById('settingUpstream').value = data.upstream_provider || 'Cloudflare';
+        document.getElementById('settingBlockingMode').value = data.blocking_mode || '0.0.0.0';
+        document.getElementById('settingAutostart').checked = !!data.autostart;
+        document.getElementById('settingRateLimitRps').value = data.rate_limit_rps || 100;
+        toggleCustomDnsInput();
+
+        // Check Windows Service
+        const ovRes = await fetch('/api/overview');
+        const ovData = await ovRes.json();
+        const lbl = document.getElementById('serviceStatusLabel');
+        const btnInst = document.getElementById('btnInstallService');
+        const btnUninst = document.getElementById('btnUninstallService');
+
+        if (ovData.is_service_installed) {
+          lbl.textContent = '✅ Installed and running as official Windows Service!';
+          lbl.style.color = '#34d399';
+          btnInst.style.display = 'none';
+          btnUninst.style.display = 'inline-flex';
+        } else {
+          lbl.textContent = '❌ Not registered as a Windows Service.';
+          lbl.style.color = '#f59e0b';
+          btnInst.style.display = 'inline-flex';
+          btnUninst.style.display = 'none';
+        }
+      } catch (e) {
+        console.error('Error fetching settings:', e);
+      }
+    }
+
+    function toggleCustomDnsInput() {
+      const val = document.getElementById('settingUpstream').value;
+      document.getElementById('customDnsGroup').style.display = (val === 'Custom') ? 'block' : 'none';
+    }
+
+    async function saveSettings() {
+      const provider = document.getElementById('settingUpstream').value;
+      const blockingMode = document.getElementById('settingBlockingMode').value;
+      const autostart = document.getElementById('settingAutostart').checked;
+      const rateLimitRps = parseInt(document.getElementById('settingRateLimitRps').value, 10) || 100;
+
+      let customDns = [];
+      if (provider === 'Custom') {
+        const raw = document.getElementById('settingCustomDns').value;
+        customDns = raw.split(',').map(s => s.trim()).filter(Boolean);
+      }
+
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          upstream_provider: provider,
+          custom_dns: customDns,
+          blocking_mode: blockingMode,
+          autostart: autostart,
+          rate_limit_rps: rateLimitRps
+        })
+      });
+      alert(currentLang === 'id' ? 'Pengaturan berhasil disimpan!' : 'Settings saved successfully!');
+      fetchOverview();
+    }
+
+    async function clearDnsCache() {
+      await fetch('/api/cache/clear', { method: 'POST' });
+      alert(currentLang === 'id' ? 'Cache DNS RAM dikosongkan!' : 'RAM DNS cache cleared!');
+      fetchOverview();
+    }
+
+    async function installService() {
+      const res = await fetch('/api/windows-service/install', { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'pro_required') {
+        openLicenseModal(data.message);
+        return;
+      }
+      alert(data.message);
+      fetchSettings();
+    }
+
+    async function uninstallService() {
+      if (!confirm('Remove AdShield Windows Service?')) return;
+      const res = await fetch('/api/windows-service/uninstall', { method: 'POST' });
+      const data = await res.json();
+      alert(data.message);
+      fetchSettings();
+    }
+
+    async function exportBackup() {
+      try {
+        const res = await fetch('/api/teleporter/export');
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const clone = res.clone();
+          try {
+            const data = await clone.json();
+            if (data.status === 'pro_required') {
+              openLicenseModal(data.message);
+              return;
+            }
+          } catch(err) {}
+        }
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `adshield_backup_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch(e) {
+        alert('Export failed: ' + e);
+      }
+    }
+
+    async function importBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const json = JSON.parse(e.target.result);
+          const res = await fetch('/api/teleporter/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(json)
+          });
+          const data = await res.json();
+          if (data.status === 'pro_required') {
+            openLicenseModal(data.message);
+            return;
+          }
+          alert(data.message);
+          fetchOverview();
+        } catch(err) {
+          alert('Invalid backup file: ' + err);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    async function openLidSettings() {
+      await fetch('/api/laptop/open-lid-settings', { method: 'POST' });
+    }
+
+    // PAUSE & RESUME
+    function openPauseModal() { document.getElementById('pauseModal').classList.add('active'); }
+    function closePauseModal() { document.getElementById('pauseModal').classList.remove('active'); }
+
+    async function executePause(minutes) {
+      await fetch('/api/pause', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ duration_minutes: minutes })
+      });
+      closePauseModal();
+      fetchOverview();
+    }
+
+    async function resumeBlocking() {
+      await fetch('/api/resume', { method: 'POST' });
+      fetchOverview();
+    }
+
+    function copyLanIp() {
+      navigator.clipboard.writeText(globalLanIp).then(() => {
+        alert(`DNS IP (${globalLanIp}) copied to clipboard!`);
+      });
+    }
+
+    async function applyLocalDns() {
+      const btn = document.getElementById('btnApplyLocalDns');
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        const res = await fetch('/api/adapter-dns/apply', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+      } catch(e) { alert('Failed: ' + e); }
+      btn.disabled = false;
+      btn.textContent = currentLang === 'id' ? 'Aktifkan DNS' : 'Enable DNS';
+      fetchOverview();
+    }
+
+    async function resetLocalDns() {
+      const btn = document.getElementById('btnResetLocalDns');
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/adapter-dns/reset', { method: 'POST' });
+        const data = await res.json();
+        alert(data.message);
+      } catch(e) { alert('Failed: ' + e); }
+      btn.disabled = false;
+      fetchOverview();
+    }
+
+    async function runLiveDnsTest() {
+      const domain = document.getElementById('testDomainInput').value.trim();
+      const box = document.getElementById('testResultBox');
+      box.style.display = 'inline-block';
+      box.style.background = '#090e1c';
+      box.style.color = '#38bdf8';
+      box.textContent = `Testing ${domain}...`;
+      try {
+        const res = await fetch('/api/dns-test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          if (data.is_blocked) {
+            box.style.background = 'rgba(239, 68, 68, 0.2)';
+            box.style.color = '#f87171';
+            box.innerHTML = `🛡️ <b>BLOCKED:</b> <code>${data.domain}</code> -> ${data.answers.join(', ')}`;
+          } else {
+            box.style.background = 'rgba(16, 185, 129, 0.2)';
+            box.style.color = '#34d399';
+            box.innerHTML = `✅ <b>FORWARDED:</b> <code>${data.domain}</code> -> ${data.answers.join(', ')}`;
+          }
+        } else {
+          box.style.background = 'rgba(239, 68, 68, 0.2)';
+          box.style.color = '#f87171';
+          box.textContent = `Error: ${data.message}`;
+        }
+      } catch(e) {
+        box.textContent = `Connection error: ${e}`;
+      }
+    }
+
+    function setAndTestDomain(d) {
+      document.getElementById('testDomainInput').value = d;
+      runLiveDnsTest();
+    }
+
+    // Click outside modal box to close
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+        }
+      });
+    });
+
+    // INITIALIZATION
+    applyLanguage(currentLang);
+    document.getElementById('langEnBtn').classList.toggle('active', currentLang === 'en');
+    document.getElementById('langIdBtn').classList.toggle('active', currentLang === 'id');
+
+    // Startup progress bar simulation while waiting for API
+    let progressVal = 20;
+    const progressInterval = setInterval(() => {
+      progressVal = Math.min(progressVal + 20, 85);
+      const bar = document.getElementById('splashProgressBar');
+      if (bar) bar.style.width = `${progressVal}%`;
+    }, 150);
+
+    fetchOverview().finally(() => clearInterval(progressInterval));
+    setInterval(fetchOverview, 3000);
+  </script>
+</body>
+</html>

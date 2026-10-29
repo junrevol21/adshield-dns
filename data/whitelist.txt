@@ -1,0 +1,2 @@
+# AdShield DNS Custom Whitelist
+# Masukkan domain yang tidak ingin diblokir (satu per baris)

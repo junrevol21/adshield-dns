@@ -1,0 +1,83 @@
+{
+  "adblock_enabled": true,
+  "pause_until": 0,
+  "upstream_provider": "Cloudflare",
+  "upstream_dns": [
+    "1.1.1.1",
+    "1.0.0.1",
+    "8.8.8.8",
+    "9.9.9.9"
+  ],
+  "upstream_mode": "race",
+  "doh_enabled": true,
+  "doh_only": false,
+  "blocking_mode": "0.0.0.0",
+  "dns_port": 53,
+  "web_port": 5380,
+  "cache_enabled": true,
+  "cache_ttl_min": 60,
+  "cache_ttl_max": 86400,
+  "optimistic_cache": true,
+  "eco_mode": true,
+  "services_blocked": {
+    "windows_spy": true,
+    "safesearch": true
+  },
+  "dns_rewrites": [
+    {
+      "domain": "modem.lan",
+      "ip": "192.168.100.1"
+    },
+    {
+      "domain": "router.lan",
+      "ip": "192.168.100.1"
+    }
+  ],
+  "rate_limit_enabled": true,
+  "rate_limit_rps": 100,
+  "auto_update_enabled": true,
+  "auto_update_interval_hours": 24,
+  "clients": [],
+  "blocklist_sources": [
+    {
+      "id": "stevenblack",
+      "name": "StevenBlack Unified Hosts",
+      "url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+      "enabled": true,
+      "count": 75950,
+      "last_updated": "Preloaded"
+    },
+    {
+      "id": "adaway",
+      "name": "AdAway Default Blocklist",
+      "url": "https://adaway.org/hosts.txt",
+      "enabled": true,
+      "count": 21,
+      "last_updated": "Preloaded"
+    },
+    {
+      "id": "hagezi",
+      "name": "Hagezi Multi PRO (250.000+ Rules)",
+      "url": "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",
+      "enabled": false,
+      "count": 0,
+      "last_updated": "-"
+    },
+    {
+      "id": "oisd",
+      "name": "OISD Big List (300.000+ Rules)",
+      "url": "https://big.oisd.nl/",
+      "enabled": false,
+      "count": 0,
+      "last_updated": "-"
+    },
+    {
+      "id": "adguard_base",
+      "name": "AdGuard Official DNS Filter",
+      "url": "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt",
+      "enabled": false,
+      "count": 0,
+      "last_updated": "-"
+    }
+  ]
+}

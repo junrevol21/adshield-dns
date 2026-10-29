@@ -1,0 +1,2 @@
+# AdShield DNS Custom Blacklist
+# Masukkan domain kustom yang ingin diblokir (satu per baris)
