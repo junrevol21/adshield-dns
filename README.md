@@ -30,7 +30,8 @@ Aplikasi DNS Sinkhole mandiri (*self-contained .exe package*) berkinerja tinggi 
 ## 🔑 Sistem Lisensi & Kupon Promo VIP
 
 AdShield dilengkapi sistem verifikasi lisensi kriptografis berbasis Hardware GUID (Machine ID Windows) dan mendukung penukaran kupon promo VIP:
-- **Kupon Demo VIP Lifetime:**
+- **Kupon Eksklusif & Demo VIP Lifetime:**
+  - `masjunganteng` (Kupon Eksklusif Mas Jun - Founder Lifetime PRO)
   - `PRO-VIP-2026`
   - `BETA-TESTER`
   - `SULTAN-BEAST`

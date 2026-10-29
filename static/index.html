@@ -1089,12 +1089,13 @@
 
       <div style="margin-bottom: 0.65rem;">
         <label style="font-size: 0.72rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;" data-i18n="inputCodeLabel">Enter License Key or Promo Coupon:</label>
-        <input type="text" id="inputLicenseCode" class="input-text" style="width: 100%; font-family: monospace; font-size: 0.88rem; font-weight: bold; text-transform: uppercase;" placeholder="PRO-VIP-2026 or BETA-TESTER">
+        <input type="text" id="inputLicenseCode" class="input-text" style="width: 100%; font-family: monospace; font-size: 0.88rem; font-weight: bold; text-transform: uppercase;" placeholder="masjunganteng or PRO-VIP-2026">
       </div>
 
       <div style="font-size: 0.7rem; color: #64748b; margin-bottom: 0.85rem; line-height: 1.4;">
         Machine ID: <code id="modalMachineId" style="color: #38bdf8; font-weight: bold;">-</code><br>
         <span style="color: #10b981;">💡 Quick VIP Coupon: 
+          <code style="cursor: pointer; text-decoration: underline; color: #fbbf24; font-weight: bold;" onclick="applyVipCode('masjunganteng')" title="Kupon Khusus Mas Jun">masjunganteng</code> • 
           <code style="cursor: pointer; text-decoration: underline;" onclick="applyVipCode('PRO-VIP-2026')">PRO-VIP-2026</code> • 
           <code style="cursor: pointer; text-decoration: underline;" onclick="applyVipCode('BETA-TESTER')">BETA-TESTER</code>
         </span>
@@ -1103,7 +1104,7 @@
       <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 0.75rem;">
         <button class="btn btn-secondary btn-sm" onclick="closeLicenseModal()">Close</button>
         <div style="display: flex; gap: 0.4rem;">
-          <button class="btn btn-warning btn-sm" onclick="applyVipCode('PRO-VIP-2026')">Use VIP Coupon</button>
+          <button class="btn btn-warning btn-sm" onclick="applyVipCode('masjunganteng')">Kupon Mas Jun</button>
           <button class="btn btn-success btn-sm" onclick="submitLicenseActivation()">Activate PRO</button>
         </div>
       </div>

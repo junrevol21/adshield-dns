@@ -18,6 +18,8 @@ SECRET_SALT = "ADSHIELD_PRO_BEAST_2026_SECRET_KEY"
 
 # Pre-registered VIP coupons & lifetime promo codes
 VIP_COUPONS = {
+    "MASJUNGANTENG": {"tier": "PRO", "expires": None, "label": "Kupon Spesial Mas Jun (Founder Lifetime PRO)"},
+    "MAS-JUN-GANTENG": {"tier": "PRO", "expires": None, "label": "Kupon Spesial Mas Jun (Founder Lifetime PRO)"},
     "PRO-VIP-2026": {"tier": "PRO", "expires": None, "label": "VIP Lifetime License"},
     "BETA-TESTER": {"tier": "PRO", "expires": None, "label": "Beta Tester Early Access"},
     "SULTAN-BEAST": {"tier": "PRO", "expires": None, "label": "Sultan Beast License"},
@@ -94,7 +96,9 @@ class LicenseManager:
         """Check if Pro mode is currently active."""
         if self.license_data.get("tier") == "PRO":
             return True
-        return False
+        # Check if license file was updated on disk
+        self.license_data = self._load()
+        return self.license_data.get("tier") == "PRO"
 
     def activate_code(self, raw_code: str) -> dict:
         """
@@ -106,19 +110,20 @@ class LicenseManager:
             return {"success": False, "message": "Kode lisensi atau kupon tidak boleh kosong."}
 
         # 1. Check if it's a VIP / Promo Coupon
-        if code in VIP_COUPONS:
-            coupon_info = VIP_COUPONS[code]
+        clean_code = code.replace(" ", "")
+        matched_coupon = VIP_COUPONS.get(code) or VIP_COUPONS.get(clean_code)
+        if matched_coupon:
             self.license_data = {
                 "tier": "PRO",
-                "license_key": code,
-                "label": coupon_info["label"],
+                "license_key": clean_code,
+                "label": matched_coupon["label"],
                 "activated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
                 "machine_id": self.machine_id
             }
             self._save()
             return {
                 "success": True,
-                "message": f"Kupon Berhasil Diaktivasi! Mode PRO aktif ({coupon_info['label']}).",
+                "message": f"Kupon Berhasil Diaktivasi! Mode PRO aktif ({matched_coupon['label']}).",
                 "tier": "PRO"
             }
 
